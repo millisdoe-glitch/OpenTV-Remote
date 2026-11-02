@@ -1,5 +1,13 @@
 import SwiftUI
 
+struct RemoteKeyButtonStyle: ButtonStyle {
+  func makeBody(configuration: Configuration) -> some View {
+    configuration.label
+      .scaleEffect(configuration.isPressed ? 0.94 : 1.0)
+      .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
+  }
+}
+
 struct CommandKey: View {
   let command: RemoteCommand
   var label = false
@@ -8,17 +16,11 @@ struct CommandKey: View {
   var enabled = true
   @Environment(RemoteStore.self) private var store
   @Environment(\.remotePalette) private var p
-  @State private var pressed = false
-  @GestureState private var contact = false
-  @State private var holdToken = UUID()
-  @State private var keySize = CGSize.zero
-  @State private var pressContact = RemotePressContact()
+
   var body: some View {
     Button {
-      if !store.canHold(command) {
-        store.dispatch(command)
-        haptic()
-      }
+      store.dispatch(command)
+      haptic()
     } label: {
       VStack(spacing: 6) {
         if command == .ok {
@@ -40,58 +42,14 @@ struct CommandKey: View {
         ).background(
           transparent ? Color.clear : Color(rgb: prominent ? p.accent : p.surface),
           in: RoundedRectangle(cornerRadius: 22)
-        ).scaleEffect(pressed ? 0.94 : 1).opacity(enabled ? 1 : 0.4).contentShape(Rectangle())
-    }.buttonStyle(.plain).disabled(!enabled).accessibilityLabel(command.title)
-      .background {
-        GeometryReader { geometry in
-          Color.clear.onAppear { keySize = geometry.size }
-            .onChange(of: geometry.size) { _, size in keySize = size }
-        }
-      }
-      .simultaneousGesture(
-        DragGesture(minimumDistance: 0).updating($contact) { _, state, _ in state = true }.onChanged
-        { value in
-          guard enabled, store.canHold(command) else { return }
-          guard
-            pressContact.remainsInside(
-              x: value.location.x, y: value.location.y, width: keySize.width, height: keySize.height
-            )
-          else {
-            cancelPress()
-            return
-          }
-          guard !pressed else { return }
-          pressed = true
-          haptic()
-          store.startHold(command, token: holdToken)
-        }.onEnded { _ in
-          cancelPress()
-          pressContact.reset()
-        }
-      )
-      .onChange(of: contact) { _, active in
-        if !active {
-          cancelPress()
-          pressContact.reset()
-        }
-      }
-      .onChange(of: enabled) { _, active in
-        if !active { cancelPress() }
-      }
-      .onDisappear {
-        cancelPress()
-        pressContact.reset()
-      }
-      .accessibilityHint(
-        store.nativeHold(command)
-          ? L10n.text("Touch and hold for the TV's long-press action.") : ""
-      )
-      .accessibilityAction { store.dispatch(command) }
+        ).opacity(enabled ? 1 : 0.4).contentShape(Rectangle())
+    }
+    .buttonStyle(RemoteKeyButtonStyle())
+    .disabled(!enabled)
+    .accessibilityLabel(command.title)
+    .accessibilityAction { store.dispatch(command) }
   }
-  private func cancelPress() {
-    store.stopHold(token: holdToken)
-    pressed = false
-  }
+
   private func haptic() { UIImpactFeedbackGenerator(style: .soft).impactOccurred(intensity: 0.6) }
 }
 struct DPad: View {
