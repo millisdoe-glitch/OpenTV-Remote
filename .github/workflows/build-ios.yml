@@ -1,0 +1,69 @@
+name: Build iOS IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'ios/**'
+      - '.github/workflows/build-ios.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build iOS App (.app)
+        run: |
+          xcodebuild clean build \
+            -project ios/OpenTVRemote.xcodeproj \
+            -scheme OpenTVRemote \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath ./DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
+
+      - name: Verify Bundle
+        continue-on-error: true
+        run: |
+          python3 tools/check_ios_bundle.py ./DerivedData/Build/Products/Release-iphoneos/OpenTVRemote.app
+
+      - name: Package into IPA
+        run: |
+          mkdir -p Payload
+          cp -r ./DerivedData/Build/Products/Release-iphoneos/OpenTVRemote.app Payload/
+          zip -r OpenTVRemote.ipa Payload
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenTVRemote-IPA
+          path: OpenTVRemote.ipa
+          retention-days: 7
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        continue-on-error: true
+        with:
+          tag_name: v0.9.1-ios-${{ github.run_number }}
+          name: OpenTV-Remote iOS v0.9.1 (Build ${{ github.run_number }})
+          body: |
+            Automated build of OpenTV-Remote for iOS (iPhone).
+            
+            ### How to install:
+            1. Download `OpenTVRemote.ipa` below.
+            2. Install it on your iPhone using **Sideloadly** or **AltStore**.
+            3. On iPhone: go to Settings -> General -> VPN & Device Management, and trust your certificate.
+          files: OpenTVRemote.ipa
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
