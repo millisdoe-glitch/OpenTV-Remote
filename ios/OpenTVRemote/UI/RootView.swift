@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 struct RootView: View {
   @Environment(RemoteStore.self) private var store
   @Environment(\.scenePhase) private var scenePhase
@@ -44,6 +45,7 @@ struct RootView: View {
       }
   }
 }
+@MainActor
 struct RemoteScreen: View {
   @Environment(RemoteStore.self) private var store
   @Environment(\.remotePalette) private var p
@@ -157,6 +159,7 @@ struct RemoteScreen: View {
         )
       }
   }
+  @MainActor
   private var connectionView: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: 22) {
