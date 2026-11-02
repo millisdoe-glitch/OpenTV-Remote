@@ -74,6 +74,7 @@ import Foundation
       if (try? await request("audio/getVolume")) != nil {
         commands.formUnion([.volumeUp, .volumeDown, .mute])
       }
+      commands.formUnion([.channelUp, .channelDown])
       if let response = try? await request("com.webos.service.networkinput/getPointerInputSocket"),
         let path = response["socketPath"] as? String, let u = URL(string: path), u.scheme == "ws",
         u.host == tv.host, u.user == nil
@@ -154,6 +155,8 @@ import Foundation
       paused.toggle()
     case .rewind: _ = try await request("media.controls/rewind")
     case .forward: _ = try await request("media.controls/fastForward")
+    case .channelUp: _ = try await request("tv/channelUp")
+    case .channelDown: _ = try await request("tv/channelDown")
     default: throw RemoteError.message(L10n.text("Unavailable key"))
     }
   }
