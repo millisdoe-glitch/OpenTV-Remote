@@ -7,7 +7,12 @@ struct CanvasPreview: View {
   @Environment(\.remotePalette) private var p
   var body: some View {
     Canvas { context, size in
-      let unit = min(size.width / 6.4, size.height / (CGFloat(canvas.rows) + 0.4))
+      draw(context: &context, size: size)
+    }.accessibilityHidden(true)
+  }
+
+  private func draw(context: inout GraphicsContext, size: CGSize) {
+    let unit = min(size.width / 6.4, size.height / (CGFloat(canvas.rows) + 0.4))
       let origin = CGPoint(
         x: (size.width - unit * 6) / 2,
         y: (size.height - unit * CGFloat(canvas.rows)) / 2)
@@ -146,7 +151,6 @@ struct CanvasPreview: View {
           }
         }
       }
-    }.accessibilityHidden(true)
   }
 }
 struct EditorItemPreview: View {

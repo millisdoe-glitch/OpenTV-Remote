@@ -22,10 +22,14 @@ struct AccentPalette: Equatable {
       ? s.uppercased() : nil
   }
   static func mix(_ a: UInt32, _ b: UInt32, _ t: Double) -> UInt32 {
-    [16, 8, 0].reduce(0) { value, shift in
-      value | UInt32(
-        (Double((a >> shift) & 255) * (1 - t) + Double((b >> shift) & 255) * t).rounded()) << shift
+    var result: UInt32 = 0
+    for shift in [16, 8, 0] {
+      let aVal = Double((a >> shift) & 255)
+      let bVal = Double((b >> shift) & 255)
+      let mixed = UInt32((aVal * (1.0 - t) + bVal * t).rounded())
+      result |= (mixed << shift)
     }
+    return result
   }
   static func contrast(_ a: UInt32, _ b: UInt32) -> Double {
     func lum(_ c: UInt32) -> Double {
